@@ -1,0 +1,13 @@
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Subject: Reset password on Yatube
+From: webmaster@localhost
+To: gimatov@list.ru
+Date: Thu, 07 May 2020 17:39:52 -0000
+Message-ID: <158887319263.7976.10908476652497898976@LENOVO-PC>
+
+Someone asked for password reset for email gimatov@list.ru. Follow thelink below:
+http://127.0.0.1:8000/auth/reset/Mw/5ga-de07180a56ac4064ebf1/
+Your username, in case you've forgotten: admin
+-------------------------------------------------------------------------------
