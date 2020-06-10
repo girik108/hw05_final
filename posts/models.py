@@ -6,7 +6,8 @@ User = get_user_model()
 
 class Post(models.Model):
     text = models.TextField()
-    pub_date = models.DateTimeField('date published', auto_now_add=True, db_index=True)
+    pub_date = models.DateTimeField(
+        'date published', auto_now_add=True, db_index=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE,
                                related_name='posts')
     group = models.ForeignKey('Group', on_delete=models.SET_NULL,
@@ -22,11 +23,21 @@ class Group(models.Model):
     def __str__(self):
         return f'{self.title} - {self.slug}'
 
+
 class Comment(models.Model):
     text = models.TextField()
-    created  = models.DateTimeField(verbose_name='date created ',
-                                    auto_now_add=True)
+    created = models.DateTimeField(verbose_name='date created ',
+                                   auto_now_add=True)
     post = models.ForeignKey('Post', on_delete=models.CASCADE,
-                            related_name='comments')
+                             related_name='comments')
     author = models.ForeignKey(User, on_delete=models.CASCADE,
                                related_name='comments')
+
+
+class Follow(models.Model):
+    #  ссылка на объект пользователя, который подписывается.
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='follower')
+    # ссылка на объект пользователя, на которого подписываются.
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='following')
