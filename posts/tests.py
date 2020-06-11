@@ -23,6 +23,10 @@ class TestPostsApp(TestCase):
         self.test_urls = [reverse('index'),
                           reverse('profile', args=[self.user.username]),
                           ]
+        self.test_user = User.objects.create_user(
+            username='test',
+            email='test@test.com',
+            password='TestTest123')
 
     def test_profile(self):
         """"
@@ -106,3 +110,22 @@ class TestPostsApp(TestCase):
                          self.post, follow=True)
         post = Post.objects.order_by("-pub_date").first()
         self.assertFalse(bool(post.image))
+
+    def test_cache(self):
+        pass
+
+    def test_comment_auth_user(self):
+        pass
+
+    def test_comment_anon_user(self):
+        anon_client = Client()
+        self.client.force_login(self.user)
+        self.post['author'] = self.user
+        post = Post.objects.create(**self.post)
+        login_url = reverse('login')
+        comment_url = reverse('add_comment', args=[self.user.username, post.id])
+        response = anon_client.post(comment_url, self.post, follow=False)
+        self.assertRedirects(response, f'{login_url}?next={comment_url}')
+
+    def test_follow(self):
+        pass

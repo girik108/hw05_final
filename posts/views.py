@@ -12,9 +12,10 @@ from .shortcuts import get_or_none
 User = get_user_model()
 
 
-@cache_page(20, key_prefix="index_page")
+#@cache_page(20, key_prefix='index_page')
 def index(request):
-    post_list = Post.objects.order_by("-pub_date").all()
+    post_list = Post.objects.select_related(
+        'author', 'group').order_by('-pub_date').all()
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
@@ -23,7 +24,8 @@ def index(request):
 
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    post_list = group.posts.order_by('-pub_date').all()
+    post_list = group.posts.select_related(
+        'author').order_by('-pub_date').all()
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
@@ -38,7 +40,7 @@ def profile(request, username):
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
-    if request.user.is_authenticated and get_or_none(Follow,user=request.user, author=author):
+    if request.user.is_authenticated and get_or_none(Follow, user=request.user, author=author):
         following = True
     else:
         following = False
@@ -121,15 +123,16 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    follow, created = Follow.objects.get_or_create(
-        user=request.user, author=author)
+    if author != request.user:
+        follow, created = Follow.objects.get_or_create(
+            user=request.user, author=author)
     return redirect('profile', author)
 
 
 @login_required
 def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
-    follow = get_or_none(Follow,user=request.user, author=author)
+    follow = get_or_none(Follow, user=request.user, author=author)
     if follow:
         follow.delete()
     return redirect('profile', author)
