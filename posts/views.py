@@ -12,7 +12,6 @@ from .shortcuts import get_or_none
 User = get_user_model()
 
 
-#@cache_page(20, key_prefix='index_page')
 def index(request):
     post_list = Post.objects.select_related(
         'author', 'group').order_by('-pub_date').all()
