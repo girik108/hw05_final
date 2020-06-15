@@ -14,6 +14,9 @@ class Post(models.Model):
                               blank=True, null=True, related_name='posts')
     image = models.ImageField(upload_to='posts/', blank=True, null=True)
 
+    class Meta:
+        ordering = ['-pub_date']
+
 
 class Group(models.Model):
     title = models.CharField(max_length=200)
@@ -32,6 +35,9 @@ class Comment(models.Model):
                              related_name='comments')
     author = models.ForeignKey(User, on_delete=models.CASCADE,
                                related_name='comments')
+
+    class Meta:
+        ordering = ['-created']
 
 
 class Follow(models.Model):

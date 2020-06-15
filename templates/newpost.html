@@ -1,12 +1,21 @@
 {% extends "base.html" %}
 {% block title %}
-    {{ data.title }}
+    {% if edit %}
+        Редактировать запись
+    {% else %}
+        Новая запись
+    {% endif %}
 {% endblock %}
 {% block content %}
+{% load user_filters %}
 <div class="row justify-content-center">
     <div class="col-md-8 p-5">
         <div class="card">
-            <div class="card-header">{{ data.title }}</div>
+            {% if edit %}
+            <div class="card-header">Редактировать запись</div>
+            {% else %}
+            <div class="card-header">Новая запись</div>
+            {% endif %}
             <div class="card-body">
                 {% if form.errors %}
                     {% for error in form.errors %}
@@ -21,8 +30,7 @@
                         <div class="form-group row" aria-required={% if field.field.required %}"true"{% else %}"false"{% endif %}>
                             <label for="{{ field.id_for_label }}" class="col-md-4 col-form-label text-md-right">{{ field.label }}{% if field.field.required %}<span class="required">*</span>{% endif %}</label>
                             <div class="col-md-6">
-                                {# подключаем фильтр и указываем класс #}
-                                {{ field }}
+                                {{ field|addclass:"form-control" }}
                                 {% if field.help_text %}
                                 <small id="{{ field.id_for_label }}-help" class="form-text text-muted">{{ field.help_text|safe }}</small>
                                 {% endif %}
@@ -31,7 +39,11 @@
                     {% endfor %}
                     <div class="col-md-6 offset-md-4">              
                         <button type="submit" class="btn btn-primary">
-                            {{ data.submit }}
+                        {% if edit %}
+                            Сохранить
+                        {% else %}
+                            Добавить
+                        {% endif %}
                         </button>
                     </div>
                 </form>

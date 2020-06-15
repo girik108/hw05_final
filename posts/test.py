@@ -154,7 +154,7 @@ class TestPostsApp(TestCase):
         response = self.client.get(self.test_urls[2])
         # Проверка обьекта коментария в context
         comment = Comment.objects.get(post=self.post)
-        self.assertIn(comment, response.context['items'])
+        self.assertIn(comment, response.context['comments'])
 
     def test_comment_anon_user(self):
         login_url = reverse('login')

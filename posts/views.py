@@ -6,7 +6,6 @@ from django.views.decorators.cache import cache_page
 
 from .models import Post, Group, Comment, Follow
 from .forms import PostForm, CommentForm
-from .shortcuts import get_or_none
 
 
 User = get_user_model()
@@ -14,7 +13,7 @@ User = get_user_model()
 
 def index(request):
     post_list = Post.objects.select_related(
-        'author', 'group').order_by('-pub_date').all()
+        'author', 'group').all()
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
@@ -24,7 +23,7 @@ def index(request):
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
     post_list = group.posts.select_related(
-        'author').order_by('-pub_date').all()
+        'author').all()
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
@@ -35,14 +34,14 @@ def group_posts(request, slug):
 def profile(request, username):
     """View функция профайла пользователя."""
     author = get_object_or_404(User, username=username)
-    post_list = author.posts.order_by("-pub_date").all()
+    post_list = author.posts.all()
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
-    if request.user.is_authenticated and get_or_none(Follow, user=request.user, author=author):
-        following = True
-    else:
-        following = False
+    following = False
+    if request.user.is_authenticated:
+        following = Follow.objects.filter(
+            user=request.user, author=author).exists()
     return render(request, 'profile.html',
                   context={'author': author, 'page': page,
                            'paginator': paginator,
@@ -51,52 +50,45 @@ def profile(request, username):
 
 def post_view(request, username, post_id):
     author = get_object_or_404(User, username=username)
-    post = get_object_or_404(Post, id=post_id)
-    comments = post.comments.order_by('-created').all()
+    post = get_object_or_404(Post, id=post_id, author=author)
+    comments = post.comments.all()
     form = CommentForm()
     return render(request, 'post.html', {'post': post,
                                          'author': author,
                                          'form': form,
-                                         'items': comments})
+                                         'comments': comments})
 
 
 @login_required
 def post_edit(request, username, post_id):
     """View функция редактирования поста."""
-    post = get_object_or_404(Post, id=post_id)
+    author = get_object_or_404(User, username=username)
+    post = get_object_or_404(Post, id=post_id, author=author)
     if post.author != request.user:
         return redirect('post', username, post_id)
-
-    data = {'title': 'Редактировать запись',
-            'submit': 'Сохранить'}
-
     form = PostForm(request.POST or None,
                     files=request.FILES or None, instance=post)
     if form.is_valid():
-        post = form.save(commit=False)
-        post.author = request.user
-        post.save()
+        post = form.save()
         return redirect('post', username, post_id)
-    return render(request, 'newpost.html', {'form': form, 'data': data, 'post': post})
+    return render(request, 'newpost.html', {'form': form, 'edit': True, 'post': post})
 
 
 @login_required
 def new_post(request):
-    data = {'title': 'Новая запись',
-            'submit': 'Добавить'}
     form = PostForm(request.POST or None)
     if form.is_valid():
         post = form.save(commit=False)
         post.author = request.user
         post.save()
         return redirect('index')
-    return render(request, 'newpost.html', {'form': form, 'data': data})
+    return render(request, 'newpost.html', {'form': form, 'edit': False})
 
 
 @login_required
 def add_comment(request, username, post_id):
     author = get_object_or_404(User, username=username)
-    post = get_object_or_404(Post, id=post_id)
+    post = get_object_or_404(Post, id=post_id, author=author)
     form = CommentForm(request.POST or None)
     if form.is_valid():
         comment = form.save(commit=False)
@@ -108,11 +100,12 @@ def add_comment(request, username, post_id):
 
 @login_required
 def follow_index(request):
-    authors = set()
-    for f in Follow.objects.filter(user=request.user).select_related('author'):
-        authors.add(f.author)
+    # Тут я понимаю что на SQL можно достучаться до постов сразу, но как через
+    # ORM ума не хватает
+    authors = Follow.objects.filter(
+        user=request.user).prefetch_related('author').values('author')
     post_list = Post.objects.filter(
-        author__in=authors).order_by("-pub_date").all()
+        author__in=authors).all()
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
@@ -131,8 +124,8 @@ def profile_follow(request, username):
 @login_required
 def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
-    follow = get_or_none(Follow, user=request.user, author=author)
-    if follow:
+    follow = Follow.objects.filter(user=request.user, author=author)
+    if follow.exists():
         follow.delete()
     return redirect('profile', author)
 
